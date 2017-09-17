@@ -26,7 +26,7 @@ class FSM {
      * @param state
      */
     changeState(state) {
-        if (this.statesArray.indexOf(state) !== -1){
+        if (this.getStates().indexOf(state) !== -1){
             this.activeState = state;
             return true;
         } else {
@@ -38,7 +38,10 @@ class FSM {
      * Changes state according to event transition rules.
      * @param event
      */
-    trigger(event) {}
+    trigger(event) {
+
+        
+    }
 
     /**
      * Resets FSM state to initial.
@@ -52,8 +55,15 @@ class FSM {
      * @returns {Array}
      */
     getStates(event) {
-
-        
+        let states = [];
+        if (!event) {
+            for (var state in this.config.states) {                
+                if (this.config.states.hasOwnProperty(state)) {
+                    states.push(state);                            
+                }
+            }
+        }
+        return states;
     }
 
     /**
