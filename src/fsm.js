@@ -9,8 +9,9 @@ class FSM {
         else
             this.config = config;
             this.activeState = config.initial; 
-            this.statesArray = [];           
-            
+            this.statesArray = [];
+            this.statesArray.push(this.activeState);
+            this.stateMarker = 0;
     }
 
     /**
@@ -27,8 +28,10 @@ class FSM {
      */
     changeState(state) {
         if (this.getStates().indexOf(state) !== -1){
-            this.statesArray.push(this.activeState);            
-            return this.activeState = state;
+            this.statesArray.push(this.activeState);  
+            this.stateMarker = 0;            
+            this.activeState = state;
+            return true;
         } else {
             throw new Error("state doesn\'t exist");
         }
@@ -39,18 +42,25 @@ class FSM {
      * @param event
      */
     trigger(event) {       
+        if (this.getStates(event).indexOf( this.activeState ) === -1 ){            
+            throw new Error("event in current state isn\'t exist");   
+        }
+        if (this.stateMarker > 0) {
+            this.statesArray.length = this.statesArray.length - this.stateMarker;
+        }
         for (var state in this.config.states) {                
             if (this.config.states.hasOwnProperty(state)) {
                 for (var trigger in this.config.states[state]) {
                     if (this.config.states[state][trigger].hasOwnProperty(event)) {
                         this.activeState = this.config.states[state][trigger][event];
-                        this.statesArray.push(this.activeState);                        
+                        this.statesArray.push(this.activeState);
+                        this.stateMarker = 0;                        
                         return this.activeState
                     }
                 }                              
            } 
-        }
-        throw new Error("event in current state isn\'t exist");   
+        }    
+
     }
 
     /**
@@ -58,6 +68,8 @@ class FSM {
      */
     reset() {
         this.activeState = this.config.initial; 
+        this.statesArray.length = 0;
+        this.stateMarker = 0;
         this.statesArray.push(this.activeState);  
     }
 
@@ -95,9 +107,17 @@ class FSM {
      * @returns {Boolean}
      */
     undo() {
-        if(this.statesArray.length === 0) {
+        if(this.statesArray.length === 1) {
             return false;
+        }else{
+            this.stateMarker++;
+            let temp = this.statesArray.length-this.stateMarker-1;
+            if (temp >= 0)
+                this.activeState=this.statesArray[temp];
+            else
+                return false;            
         }
+        return true;
     }
 
     /**
@@ -105,40 +125,23 @@ class FSM {
      * Returns false if redo is not available.
      * @returns {Boolean}
      */
-    redo() {}
+    redo() {
+        if(this.stateMarker === 0) {
+            return false;
+        }else{
+            this.stateMarker--;
+            let temp = this.statesArray.length-this.stateMarker-1;
+            this.activeState = this.statesArray[temp];        
+        }
+        return true;
+    }
 
     /**
      * Clears transition history
      */
-    clearHistory() {}
-
-    /**
-     * Parses config object
-     */
-     configParser(config, event){
-        let statesArray1 = [];
-        let triggersArray =[];
-        for (var state in config.states) {                
-            if (config.states.hasOwnProperty(state)) {
-                statesArray1.push(state);     
-                //console.log(config.states[state]);
-                    for (var trigger in config.states[state]) {  
-                        // console.log(trigger);
-                        // console.log(config.states[state]);
-                        // console.log(config.states[state][trigger]);
-                        // console.log("key: " +trigger + "  value:" +config.states[state][trigger] );
-                        console.log(config.states[state][trigger][event])
-                        for( var smth in config.states[state][trigger]   ){
-                           // console.log("key: " +smth + "  value:" +config.states[state][trigger][smth] )
-
-                            triggersArray.push(new Object(smth,config.states[state][trigger][smth]))
-                        }
-                    }   
-                }              
-        }
-        return triggersArray;
+    clearHistory() {
+        this.reset();
     }
-
 }
 
 module.exports = FSM;
